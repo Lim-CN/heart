@@ -76,13 +76,42 @@ const material = new THREE.PointsMaterial({
 const particles = new THREE.Points(geometry, material);
 group.add(particles);
 
+// 添加文字"Quinn"
+let textMesh = null;
+const fontLoader = new THREE.FontLoader();
+fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
+  const textGeometry = new THREE.TextGeometry('Quinn', {
+    font: font,
+    size: 0.08,
+    height: 0.02,
+    curveSegments: 20,
+    bevelEnabled: false
+  });
+  
+  // 居中文字
+  textGeometry.computeBoundingBox();
+  const textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
+  textGeometry.translate(-textWidth / 2, 0, 0);
+  
+  const textMaterial = new THREE.MeshBasicMaterial({
+    color: new THREE.Color("#ffffff"),
+    transparent: true,
+    opacity: 0.9
+  });
+  
+  textMesh = new THREE.Mesh(textGeometry, textMaterial);
+  textMesh.position.y = 0.05; // 调整文字在心脏中的位置
+  textMesh.position.z = 0.02; // 稍微向前偏移，避免与心脏重叠
+  group.add(textMesh);
+});
+
 const simplex = new SimplexNoise();
 const pos = new THREE.Vector3();
 const palette = [
-  new THREE.Color("#ffd4ee"),
-  new THREE.Color("#ff77fc"),
-  new THREE.Color("#ff77ae"),
-  new THREE.Color("#ff1775"),
+  new THREE.Color("#b8e986"),  // 浅绿色
+  new THREE.Color("#7ed321"),  // 草绿色
+  new THREE.Color("#4a9d23"),  // 绿色
+  new THREE.Color("#2d6a1f")   // 深绿色
 ];
 class SparkPoint {
   constructor() {
@@ -141,6 +170,17 @@ const rateZ = 0.5;
 function render(a) {
   positions = [];
   colors = [];
+  
+  // 更新文字脉动效果
+  if (textMesh) {
+    // 更平滑的缩放动画
+    const scale = 1 + Math.sin(a * 0.0005) * 0.05 * beat.a;
+    textMesh.scale.set(scale, scale, scale);
+    
+    // 更缓慢的颜色变化，避免闪烁
+    const hue = (a * 0.0005) % 1;
+    textMesh.material.color.setHSL(hue, 0.6, 0.8);
+  }
   spikes.forEach((g, i) => {
     g.update(a);
     const rand = g.rand;
