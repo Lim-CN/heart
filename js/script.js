@@ -79,7 +79,20 @@ group.add(particles);
 // 添加文字"Quinn"
 let textMesh = null;
 const fontLoader = new THREE.FontLoader();
-fontLoader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
+
+// 可用字体列表
+const availableFonts = {
+  'helvetiker': 'https://threejs.org/examples/fonts/helvetiker_regular.typeface.json',
+  'optimer': 'https://threejs.org/examples/fonts/optimer_regular.typeface.json',
+  'gentilis': 'https://threejs.org/examples/fonts/gentilis_regular.typeface.json',
+  'droid_sans': 'https://threejs.org/examples/fonts/droid/droid_sans_regular.typeface.json',
+  'droid_serif': 'https://threejs.org/examples/fonts/droid/droid_serif_regular.typeface.json'
+};
+
+// 当前选择的字体（可以修改这个值来切换字体）
+const selectedFont = 'droid_serif'; // 可以改为: 'helvetiker', 'optimer', 'gentilis', 'droid_sans', 'droid_serif'
+
+fontLoader.load(availableFonts[selectedFont], function(font) {
   const textGeometry = new THREE.TextGeometry('Quinn', {
     font: font,
     size: 0.08,
