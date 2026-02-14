@@ -1,5 +1,25 @@
 // console.clear();
 
+// 加载状态管理
+let loadingProgress = 0;
+const totalResources = 3; // 心脏模型 + 字体 + 初始化
+
+function updateLoadingProgress() {
+  loadingProgress++;
+  if (loadingProgress >= totalResources) {
+    // 所有资源加载完成，隐藏加载动画
+    setTimeout(() => {
+      const loadingElement = document.getElementById('loading');
+      if (loadingElement) {
+        loadingElement.classList.add('hidden');
+        setTimeout(() => {
+          loadingElement.style.display = 'none';
+        }, 500);
+      }
+    }, 500); // 延迟500ms确保动画流畅
+  }
+}
+
 // 创建场景对象 Scene
 const scene = new THREE.Scene();
 
@@ -61,6 +81,18 @@ new THREE.OBJLoader().load(
     init();
     // 每一帧都会调用
     renderer.setAnimationLoop(render);
+    
+    // 心脏模型加载完成
+    updateLoadingProgress();
+  },
+  // 加载进度回调
+  function (xhr) {
+    console.log((xhr.loaded / xhr.total * 100) + '% 心脏模型加载完成');
+  },
+  // 错误回调
+  function (error) {
+    console.error('心脏模型加载失败:', error);
+    updateLoadingProgress(); // 即使失败也要更新进度
   }
 );
 
@@ -116,20 +148,90 @@ fontLoader.load(availableFonts[selectedFont], function(font) {
   textMesh.position.y = 0.05; // 调整文字在心脏中的位置
   textMesh.position.z = 0.02; // 稍微向前偏移，避免与心脏重叠
   group.add(textMesh);
+  
+  // 字体加载完成
+  updateLoadingProgress();
+}, undefined, function(error) {
+  console.error('字体加载失败:', error);
+  updateLoadingProgress(); // 即使失败也要更新进度
 });
 
 const simplex = new SimplexNoise();
 const pos = new THREE.Vector3();
-const palette = [
+// 原始色系（绿色系）
+const originalPalette = [
   new THREE.Color("#b8e986"),  // 浅绿色
   new THREE.Color("#7ed321"),  // 草绿色
   new THREE.Color("#4a9d23"),  // 绿色
   new THREE.Color("#2d6a1f")   // 深绿色
 ];
+
+// 红色系
+const redPalette = [
+  new THREE.Color("#ffd4ee"),  // 浅粉色
+  new THREE.Color("#ff77fc"),  // 亮粉色
+  new THREE.Color("#ff77ae"),  // 粉红色
+  new THREE.Color("#ff1775")   // 深粉色
+];
+
+// 当前色系
+let currentPalette = originalPalette;
+let palette = originalPalette;
+// 长按变色功能
+let pressTimer = null;
+let isRedTheme = false;
+
+// 鼠标/触摸事件监听
+document.addEventListener('mousedown', startPressTimer);
+document.addEventListener('touchstart', startPressTimer);
+document.addEventListener('mouseup', clearPressTimer);
+document.addEventListener('touchend', clearPressTimer);
+document.addEventListener('mouseleave', clearPressTimer);
+
+function startPressTimer() {
+  pressTimer = setTimeout(() => {
+    toggleColorTheme();
+  }, 5000); // 5秒长按
+}
+
+function clearPressTimer() {
+  if (pressTimer) {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+  }
+}
+
+function toggleColorTheme() {
+  isRedTheme = !isRedTheme;
+  currentPalette = isRedTheme ? redPalette : originalPalette;
+  
+  // 更新所有粒子的颜色
+  spikes.forEach(spike => {
+    spike.color = currentPalette[Math.floor(Math.random() * currentPalette.length)];
+  });
+  
+  // 添加切换动画效果
+  if (isRedTheme) {
+    // 切换到红色系时的动画
+    gsap.to(renderer, { 
+      clearColor: new THREE.Color("#1a0000"), 
+      duration: 1, 
+      ease: "power2.inOut" 
+    });
+  } else {
+    // 切换回绿色系时的动画
+    gsap.to(renderer, { 
+      clearColor: new THREE.Color("rgb(0,0,0)"), 
+      duration: 1, 
+      ease: "power2.inOut" 
+    });
+  }
+}
+
 class SparkPoint {
   constructor() {
     sampler.sample(pos);
-    this.color = palette[Math.floor(Math.random() * palette.length)];
+    this.color = currentPalette[Math.floor(Math.random() * currentPalette.length)];
     this.rand = Math.random() * 0.03;
     this.pos = pos.clone();
     this.one = null;
@@ -157,6 +259,9 @@ function init(a) {
     const g = new SparkPoint();
     spikes.push(g);
   }
+  
+  // 初始化完成
+  updateLoadingProgress();
 }
 
 const beat = { a: 0 };
